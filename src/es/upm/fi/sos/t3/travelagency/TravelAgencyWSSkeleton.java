@@ -15,6 +15,7 @@ import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.CheckingFlight;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.CheckingFlightResponse;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.Origin;
+import es.upm.fi.sos.t3.flightbooking.client.NotValidOriginError;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.CheckingHotel;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.CheckingHotelResponse;
@@ -28,7 +29,6 @@ import es.upm.fi.sos.t3.loginservice.client.LoginServiceWSStub.LoginTokenRespons
  */
 public class TravelAgencyWSSkeleton{
 	private Budget presupuesto = new Budget();
-	private int instance = 0;
 	private boolean log = false;
 
 	public TravelAgencyWSSkeleton(){
@@ -68,11 +68,9 @@ public class TravelAgencyWSSkeleton{
 		try {
 			authCall = stub.authenticateUser(loginToken);
 		} catch (RemoteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new RemoteServiceError();
 		} catch (LoginError e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new RemoteServiceError();
 		}
 		response = authCall.getLoginTokenResponse();
 		if(response){ 
@@ -96,7 +94,7 @@ public class TravelAgencyWSSkeleton{
 
 			)
 	{
-		//TODO : fill this with the necessary business logic
+		this.log = false;
 
 	}
 
@@ -114,6 +112,7 @@ public class TravelAgencyWSSkeleton{
 					throws NotValidSessionError{
 
 
+		if(this.log = false) throw new NotValidSessionError();
 		return this.presupuesto;
 	}
 
@@ -217,13 +216,22 @@ public class TravelAgencyWSSkeleton{
 		// lista de los origenes de vuelos
 
 		// Se comprueba la validez de un login previo
+		if(this.log == true){
 
-		OriginFlightList result = new OriginFlightList();
-		FlightBookingWSStub FBstub = new FlightBookingWSStub();
-		String[] listaOrigenes = FBstub.getOriginList().getOrigin();
-		result.setOrigin(listaOrigenes);
-
-		return result;
+			OriginFlightList result = new OriginFlightList();
+			String[] listaOrigenes;
+			try {
+				FlightBookingWSStub FBstub = new FlightBookingWSStub();
+				listaOrigenes = FBstub.getOriginList().getOrigin();
+				result.setOrigin(listaOrigenes);
+			} catch (RemoteException e) {
+				throw new RemoteServiceError();
+			}
+			return result;
+		}
+		else{
+			throw new NotValidSessionError();
+		}
 	}
 
 	/**
@@ -247,15 +255,29 @@ public class TravelAgencyWSSkeleton{
 
 		// Se comprueba la validez de un login previo
 
-		DestinationFlightList result = new DestinationFlightList();
-		FlightBookingWSStub FBstub = new FlightBookingWSStub();
-		String origen = originFlight.getOriginFlight();
-		Origin origin = new Origin();
-		origin.setOrigin(origen);
+		if(this.log == true){
+			DestinationFlightList result = new DestinationFlightList();
+			FlightBookingWSStub FBstub;
+			try {
+				FBstub = new FlightBookingWSStub();
+				String origen = originFlight.getOriginFlight();
+				Origin origin = new Origin();
+				origin.setOrigin(origen);
 
-		String[] listaDestinos = FBstub.getDestinationList(origin).getDestination();
-		result.setDestination(listaDestinos);
-
+				String[] listaDestinos = FBstub.getDestinationList(origin).getDestination();
+				result.setDestination(listaDestinos);
+			} catch (AxisFault e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (RemoteException e) {
+				throw new RemoteServiceError();
+			} catch (NotValidOriginError e) {
+				throw new NotValidOriginFlightError();
+			}
+		}
+		else{
+			throw new NotValidSessionError();
+		}
 		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#getDestinationFlightList");
 	}
 
