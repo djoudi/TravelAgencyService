@@ -15,11 +15,14 @@ import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.CheckingFlight;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.CheckingFlightResponse;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.Origin;
+import es.upm.fi.sos.t3.flightbooking.client.NotValidDestinationError;
 import es.upm.fi.sos.t3.flightbooking.client.NotValidOriginError;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.CheckingHotel;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.CheckingHotelResponse;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.City;
+import es.upm.fi.sos.t3.hotelbooking.client.NotValidCityError;
+import es.upm.fi.sos.t3.hotelbooking.client.NotValidHotelError;
 import es.upm.fi.sos.t3.loginservice.client.LoginError;
 import es.upm.fi.sos.t3.loginservice.client.LoginServiceWSStub;
 import es.upm.fi.sos.t3.loginservice.client.LoginServiceWSStub.LoginToken;
@@ -305,23 +308,40 @@ public class TravelAgencyWSSkeleton{
 		// Se comprueba la validez de un login previo
 		// Se comprueba
 
-		CheckingOnlyFlightResponse result = new CheckingOnlyFlightResponse();
-		String origen = checkingOnlyFlight.getOrigin();
-		String destino = checkingOnlyFlight.getDestination();
-		FlightBookingWSStub FBstub = new FlightBookingWSStub();
+		if(this.log == true){
+			CheckingOnlyFlightResponse result = new CheckingOnlyFlightResponse();
+			String origen = checkingOnlyFlight.getOrigin();
+			String destino = checkingOnlyFlight.getDestination();
 
-		CheckingFlight checkingFlight = new CheckingFlight();
-		checkingFlight.setOrigin(origen);
-		checkingFlight.setDestination(destino);
-		CheckingFlightResponse cfresponse = FBstub.checkFlight(checkingFlight);
+			FlightBookingWSStub FBstub;
+			try {
+				FBstub = new FlightBookingWSStub();
+				CheckingFlight checkingFlight = new CheckingFlight();
+				checkingFlight.setOrigin(origen);
+				checkingFlight.setDestination(destino);
+				CheckingFlightResponse cfresponse = FBstub.checkFlight(checkingFlight);
 
-		double precioAsientos = cfresponse.getPrice();
-		int numeroAsientos = cfresponse.getSeatAvailability();
+				double precioAsientos = cfresponse.getPrice();
+				int numeroAsientos = cfresponse.getSeatAvailability();
+				result.setPrice(precioAsientos);
+				result.setSeatAvailability(numeroAsientos);
 
-		result.setPrice(precioAsientos);
-		result.setSeatAvailability(numeroAsientos);
+			} catch (AxisFault e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (RemoteException e) {
+				throw new RemoteServiceError();
+			} catch (NotValidOriginError e) {
+				throw new NotValidOriginFlightError();
+			} catch (NotValidDestinationError e) {
+				throw new NotValidDestinationFlightError();
+			}
+			return result;
+		}
+		else{
+			throw new NotValidSessionError();
+		}
 
-		return result;
 	}
 
 	/**
@@ -387,14 +407,25 @@ public class TravelAgencyWSSkeleton{
 
 		// Se comprueba la validez de un login previo
 
+		if(this.log == true){
 		CityHotelList result = new CityHotelList();
-		HotelBookingWSStub HBstub = new HotelBookingWSStub();
-		City city = new City();
-
-		String[] listaCiudades = HBstub.getCityList().getCity();
-		result.setCity(listaCiudades);
-
+		
+		HotelBookingWSStub HBstub;
+		try {
+			HBstub = new HotelBookingWSStub();
+			String[] listaCiudades = HBstub.getCityList().getCity();
+			result.setCity(listaCiudades);
+		} catch (AxisFault e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			throw new RemoteServiceError();
+		}
 		return result;
+		}
+		else{
+			throw new NotValidSessionError();
+		}
 	}
 
 	/**
@@ -417,14 +448,29 @@ public class TravelAgencyWSSkeleton{
 
 		// Se comprueba la validez de un login previo
 
+		if(this.log == true ){
 		HotelHotelList result = new HotelHotelList();
-		HotelBookingWSStub HBstub = new HotelBookingWSStub();
-		City city = new City();
-		city.setCity(cityHotel.getCityHotel());
-		String[] listaHoteles = HBstub.getHotelList(city).getHotel();
-		result.setHotel(listaHoteles);
-
+		HotelBookingWSStub HBstub;
+		
+		try {
+			HBstub = new HotelBookingWSStub();
+			City city = new City();
+			city.setCity(cityHotel.getCityHotel());
+			String[] listaHoteles = HBstub.getHotelList(city).getHotel();
+			result.setHotel(listaHoteles);
+		} catch (AxisFault e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			throw new RemoteServiceError();
+		} catch (NotValidCityError e) {
+			throw new NotValidCityHotelError();
+		}
 		return result;
+		}
+		else{
+			throw new NotValidSessionError();
+		}
 	}
 
 	/**
@@ -452,19 +498,31 @@ public class TravelAgencyWSSkeleton{
 		CheckingOnlyHotelResponse result = new CheckingOnlyHotelResponse();
 		String ciudad = checkingOnlyHotel.getCity();
 		String hotel = checkingOnlyHotel.getHotel();
-		HotelBookingWSStub HBstub = new HotelBookingWSStub();
+		
+		HotelBookingWSStub HBstub;
+		try {
+			HBstub = new HotelBookingWSStub();
+			CheckingHotel checkingHotel = new CheckingHotel();
+			checkingHotel.setCity(ciudad);
+			checkingHotel.setHotel(hotel);
+			CheckingHotelResponse chresponse = HBstub.checkHotel(checkingHotel);
 
-		CheckingHotel checkingHotel = new CheckingHotel();
-		checkingHotel.setCity(ciudad);
-		checkingHotel.setHotel(hotel);
-		CheckingHotelResponse chresponse = HBstub.checkHotel(checkingHotel);
+			double precioHotel= chresponse.getPrice();
+			int habitacionesHotel= chresponse.getRoomAvailability();
 
-		double precioHotel= chresponse.getPrice();
-		int habitacionesHotel= chresponse.getRoomAvailability();
+			result.setPrice(precioHotel);
+			result.setRoomAvailability(habitacionesHotel);
 
-		result.setPrice(precioHotel);
-		result.setRoomAvailability(habitacionesHotel);
-
+		} catch (AxisFault e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (RemoteException e) {
+			throw new RemoteServiceError();
+		} catch (NotValidCityError e) {
+			throw new NotValidCityHotelError();
+		} catch (NotValidHotelError e) {
+			throw new NotValidHotelHotelError();
+		}
 		return result;
 	}
 
