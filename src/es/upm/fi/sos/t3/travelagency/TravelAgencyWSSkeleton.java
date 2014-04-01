@@ -206,15 +206,58 @@ public class TravelAgencyWSSkeleton{
 			es.upm.fi.sos.t3.travelagency.BookingTrip bookingTrip
 			)
 					throws NotValidOriginFlightError,NotValidDestinationFlightError,NotEnoughSeatsFlightError,NotValidSeatFlightError,NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-		
+
 		// este metodo debe hacer la reserva de un viaje completo, haciendo la reserva 
 		// del vuelo y del hotel
-		
-		
+
+
 		/* Tomar datos del objeto de entrada bookingTrip */
+
+		String origen = bookingTrip.getOrigin();
+		String ciudad = bookingTrip.getDestination();
+		String hotel = bookingTrip.getHotel();
+		int n_asientos = bookingTrip.getSeat();
+		int n_habitaciones = bookingTrip.getRoom();
+
+		/* Crear objetos tipo BookingOnlyFlight y BookingOnlyHotel*/
+
+		BookingOnlyFlight bookingOnlyFlight = new BookingOnlyFlight();
+		BookingOnlyHotel bookingOnlyHotel = new BookingOnlyHotel();
+
+		/* Establecer parametros de las llamadas */
+
+		bookingOnlyFlight.setOrigin(origen);
+		bookingOnlyFlight.setDestination(ciudad);
+		bookingOnlyFlight.setSeat(n_asientos);
+
+		bookingOnlyHotel.setCity(ciudad);
+		bookingOnlyHotel.setHotel(hotel);
+		bookingOnlyHotel.setRoom(n_habitaciones);
+
+		/* Uso de las operaciones de la interfaz de TravelAgency*/
+		BookingOnlyFlightResponse BFresponse = bookOnlyFlight(bookingOnlyFlight);
+		BookingOnlyHotelResponse BHresponse = bookOnlyHotel(bookingOnlyHotel);
+
+		/* Obtener resultados */
+		boolean flight_success = BFresponse.getBookingResult();
+		double flight_price = BFresponse.getPrice();
+
+		boolean hotel_success = BHresponse.getBookingResult();
+		double hotel_price = BHresponse.getPrice();
+
+
+		/* Preparar respuesta */
+		BookingTripResponse result = new BookingTripResponse();
+		result.setBookingResult(flight_success && hotel_success);
+		result.setPrice(flight_price + hotel_price);
 		
+		double actualizado = this.presupuesto.getBudget() - flight_price - hotel_price;
+
+		/* Actualizar presupuesto */
+		if(flight_success && hotel_success)
+		this.presupuesto.setBudget(actualizado);	
 		
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#bookTrip");
+		return result;
 	}
 
 	/**
@@ -387,7 +430,7 @@ public class TravelAgencyWSSkeleton{
 		if(this.log==true){
 			/* Creamos un objeto de tipo BookingOnlyFlightResponse para la respuesta */
 			BookingOnlyFlightResponse result = new BookingOnlyFlightResponse();
-			
+
 			/* Sacamos los datos de la solicitud */
 			String origen = bookingOnlyFlight.getOrigin();
 			String destino = bookingOnlyFlight.getDestination();
@@ -396,7 +439,7 @@ public class TravelAgencyWSSkeleton{
 			try {
 				/* Creamos un stub del servicio FlightService para realizar la peticion de reserva */
 				FlightBookingWSStub FBstub = new FlightBookingWSStub();
-				
+
 				/* Creamos un objeto del tipo BookingFlight para la peticion al servicio */
 				BookingFlight bookingFlight = new BookingFlight();
 
@@ -409,11 +452,11 @@ public class TravelAgencyWSSkeleton{
 
 				/* Llamamos al servicio */
 				bookingFlightResponse = FBstub.bookFlight(bookingFlight);
-					
+
 				/* Establecemos en el objeto a devolver el resultado */
 				result.setBookingResult(bookingFlightResponse.getBookingResult());
 				result.setPrice(bookingFlightResponse.getPrice());
-				
+
 			} catch (AxisFault e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -428,7 +471,7 @@ public class TravelAgencyWSSkeleton{
 			} catch (NotValidSeatError e) {
 				throw new NotValidSeatFlightError();
 			}
-			
+
 			return result;
 		}
 		else{
@@ -614,61 +657,61 @@ public class TravelAgencyWSSkeleton{
 			es.upm.fi.sos.t3.travelagency.BookingOnlyHotel bookingOnlyHotel
 			)
 					throws NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-				//este metodo debe realizar la reserva de una/varias habitaciones de un hotel dado el
-				//el numero de habitaciones, la ciudad y el hotel. Devolverá un boolean indicando el éxito de la
-				//reserva y el precio de la reserva.
+		//este metodo debe realizar la reserva de una/varias habitaciones de un hotel dado el
+		//el numero de habitaciones, la ciudad y el hotel. Devolverá un boolean indicando el éxito de la
+		//reserva y el precio de la reserva.
 
 
-				if(this.log==true){
-					/* Creamos un objeto de tipo BookingOnlyFlightResponse para la respuesta */
-					BookingOnlyHotelResponse result = new BookingOnlyHotelResponse();
-					
-					/* Sacamos los datos de la solicitud */
-					String ciudad = bookingOnlyHotel.getCity();
-					String hotel = bookingOnlyHotel.getHotel();
-					int n_habitaciones = bookingOnlyHotel.getRoom();
+		if(this.log==true){
+			/* Creamos un objeto de tipo BookingOnlyFlightResponse para la respuesta */
+			BookingOnlyHotelResponse result = new BookingOnlyHotelResponse();
 
-					try {
-						/* Creamos un stub del servicio HotelService para realizar la peticion de reserva */
-						HotelBookingWSStub HBstub = new HotelBookingWSStub();
-						
-						/* Creamos un objeto del tipo BookingHotel para la peticion al servicio */
-						BookingHotel bookingHotel = new BookingHotel();
+			/* Sacamos los datos de la solicitud */
+			String ciudad = bookingOnlyHotel.getCity();
+			String hotel = bookingOnlyHotel.getHotel();
+			int n_habitaciones = bookingOnlyHotel.getRoom();
 
-						bookingHotel.setCity(ciudad);
-						bookingHotel.setHotel(hotel);
-						bookingHotel.setRoom(n_habitaciones);
-						
-						/* Creamos un objeto del tipo BookingHotelResponse para la respuesta del servicio */
-						BookingHotelResponse bookingHotelResponse = new BookingHotelResponse();
+			try {
+				/* Creamos un stub del servicio HotelService para realizar la peticion de reserva */
+				HotelBookingWSStub HBstub = new HotelBookingWSStub();
 
-						/* Llamamos al servicio */
-						bookingHotelResponse = HBstub.bookHotel(bookingHotel);
-							
-						/* Establecemos en el objeto a devolver el resultado */
-						result.setBookingResult(bookingHotelResponse.getBookingResult());
-						result.setPrice(bookingHotelResponse.getPrice());
-						
-					} catch (AxisFault e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (RemoteException e) {
-						throw new RemoteServiceError();
-					} catch (NotValidCityError e) {
-						throw new NotValidCityHotelError();
-					} catch (NotValidHotelError e) {
-						throw new NotValidHotelHotelError();
-					} catch (NotEnoughRoomsError e) {
-						throw new NotEnoughRoomsHotelError();
-					} catch (NotValidRoomError e) {
-						throw new NotValidRoomHotelError();
-					}
-					
-					return result;
-				}
-				else{
-					throw new NotValidSessionError();
-				}
+				/* Creamos un objeto del tipo BookingHotel para la peticion al servicio */
+				BookingHotel bookingHotel = new BookingHotel();
+
+				bookingHotel.setCity(ciudad);
+				bookingHotel.setHotel(hotel);
+				bookingHotel.setRoom(n_habitaciones);
+
+				/* Creamos un objeto del tipo BookingHotelResponse para la respuesta del servicio */
+				BookingHotelResponse bookingHotelResponse = new BookingHotelResponse();
+
+				/* Llamamos al servicio */
+				bookingHotelResponse = HBstub.bookHotel(bookingHotel);
+
+				/* Establecemos en el objeto a devolver el resultado */
+				result.setBookingResult(bookingHotelResponse.getBookingResult());
+				result.setPrice(bookingHotelResponse.getPrice());
+
+			} catch (AxisFault e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (RemoteException e) {
+				throw new RemoteServiceError();
+			} catch (NotValidCityError e) {
+				throw new NotValidCityHotelError();
+			} catch (NotValidHotelError e) {
+				throw new NotValidHotelHotelError();
+			} catch (NotEnoughRoomsError e) {
+				throw new NotEnoughRoomsHotelError();
+			} catch (NotValidRoomError e) {
+				throw new NotValidRoomHotelError();
+			}
+
+			return result;
+		}
+		else{
+			throw new NotValidSessionError();
+		}
 	}
 
 	/**
