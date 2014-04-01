@@ -12,17 +12,25 @@ import java.rmi.RemoteException;
 import org.apache.axis2.AxisFault;
 
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub;
+import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.BookingFlight;
+import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.BookingFlightResponse;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.CheckingFlight;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.CheckingFlightResponse;
 import es.upm.fi.sos.t3.flightbooking.client.FlightBookingWSStub.Origin;
+import es.upm.fi.sos.t3.flightbooking.client.NotEnoughSeatsError;
 import es.upm.fi.sos.t3.flightbooking.client.NotValidDestinationError;
 import es.upm.fi.sos.t3.flightbooking.client.NotValidOriginError;
+import es.upm.fi.sos.t3.flightbooking.client.NotValidSeatError;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub;
+import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.BookingHotel;
+import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.BookingHotelResponse;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.CheckingHotel;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.CheckingHotelResponse;
 import es.upm.fi.sos.t3.hotelbooking.client.HotelBookingWSStub.City;
+import es.upm.fi.sos.t3.hotelbooking.client.NotEnoughRoomsError;
 import es.upm.fi.sos.t3.hotelbooking.client.NotValidCityError;
 import es.upm.fi.sos.t3.hotelbooking.client.NotValidHotelError;
+import es.upm.fi.sos.t3.hotelbooking.client.NotValidRoomError;
 import es.upm.fi.sos.t3.loginservice.client.LoginError;
 import es.upm.fi.sos.t3.loginservice.client.LoginServiceWSStub;
 import es.upm.fi.sos.t3.loginservice.client.LoginServiceWSStub.LoginToken;
@@ -198,7 +206,14 @@ public class TravelAgencyWSSkeleton{
 			es.upm.fi.sos.t3.travelagency.BookingTrip bookingTrip
 			)
 					throws NotValidOriginFlightError,NotValidDestinationFlightError,NotEnoughSeatsFlightError,NotValidSeatFlightError,NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-		//TODO : fill this with the necessary business logic
+		
+		// este metodo debe hacer la reserva de un viaje completo, haciendo la reserva 
+		// del vuelo y del hotel
+		
+		
+		/* Tomar datos del objeto de entrada bookingTrip */
+		
+		
 		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#bookTrip");
 	}
 
@@ -363,8 +378,62 @@ public class TravelAgencyWSSkeleton{
 			es.upm.fi.sos.t3.travelagency.BookingOnlyFlight bookingOnlyFlight
 			)
 					throws NotValidOriginFlightError,NotValidDestinationFlightError,NotEnoughSeatsFlightError,NotValidSeatFlightError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#bookOnlyFlight");
+
+		//este metodo debe realizar la reserva de un vuelo dado el numero de asientos a reservar
+		//la ciudad origen y la ciudad destino. Devolverá un boolean indicando el éxito de la
+		//reserva y el precio de la reserva.
+
+
+		if(this.log==true){
+			/* Creamos un objeto de tipo BookingOnlyFlightResponse para la respuesta */
+			BookingOnlyFlightResponse result = new BookingOnlyFlightResponse();
+			
+			/* Sacamos los datos de la solicitud */
+			String origen = bookingOnlyFlight.getOrigin();
+			String destino = bookingOnlyFlight.getDestination();
+			int n_asientos = bookingOnlyFlight.getSeat();
+
+			try {
+				/* Creamos un stub del servicio FlightService para realizar la peticion de reserva */
+				FlightBookingWSStub FBstub = new FlightBookingWSStub();
+				
+				/* Creamos un objeto del tipo BookingFlight para la peticion al servicio */
+				BookingFlight bookingFlight = new BookingFlight();
+
+				bookingFlight.setOrigin(origen);
+				bookingFlight.setDestination(destino);
+				bookingFlight.setSeat(n_asientos);
+
+				/* Creamos un objeto del tipo BookingFlight para la respuesta del servicio */
+				BookingFlightResponse bookingFlightResponse = new BookingFlightResponse();
+
+				/* Llamamos al servicio */
+				bookingFlightResponse = FBstub.bookFlight(bookingFlight);
+					
+				/* Establecemos en el objeto a devolver el resultado */
+				result.setBookingResult(bookingFlightResponse.getBookingResult());
+				result.setPrice(bookingFlightResponse.getPrice());
+				
+			} catch (AxisFault e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (RemoteException e) {
+				throw new RemoteServiceError();
+			} catch (NotValidOriginError e) {
+				throw new NotValidOriginFlightError();
+			} catch (NotValidDestinationError e) {
+				throw new NotValidDestinationFlightError();
+			} catch (NotEnoughSeatsError e) {
+				throw new NotEnoughSeatsFlightError();
+			} catch (NotValidSeatError e) {
+				throw new NotValidSeatFlightError();
+			}
+			
+			return result;
+		}
+		else{
+			throw new NotValidSessionError();
+		}
 	}
 
 	/**
@@ -408,20 +477,20 @@ public class TravelAgencyWSSkeleton{
 		// Se comprueba la validez de un login previo
 
 		if(this.log == true){
-		CityHotelList result = new CityHotelList();
-		
-		HotelBookingWSStub HBstub;
-		try {
-			HBstub = new HotelBookingWSStub();
-			String[] listaCiudades = HBstub.getCityList().getCity();
-			result.setCity(listaCiudades);
-		} catch (AxisFault e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RemoteException e) {
-			throw new RemoteServiceError();
-		}
-		return result;
+			CityHotelList result = new CityHotelList();
+
+			HotelBookingWSStub HBstub;
+			try {
+				HBstub = new HotelBookingWSStub();
+				String[] listaCiudades = HBstub.getCityList().getCity();
+				result.setCity(listaCiudades);
+			} catch (AxisFault e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (RemoteException e) {
+				throw new RemoteServiceError();
+			}
+			return result;
 		}
 		else{
 			throw new NotValidSessionError();
@@ -449,24 +518,24 @@ public class TravelAgencyWSSkeleton{
 		// Se comprueba la validez de un login previo
 
 		if(this.log == true ){
-		HotelHotelList result = new HotelHotelList();
-		HotelBookingWSStub HBstub;
-		
-		try {
-			HBstub = new HotelBookingWSStub();
-			City city = new City();
-			city.setCity(cityHotel.getCityHotel());
-			String[] listaHoteles = HBstub.getHotelList(city).getHotel();
-			result.setHotel(listaHoteles);
-		} catch (AxisFault e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (RemoteException e) {
-			throw new RemoteServiceError();
-		} catch (NotValidCityError e) {
-			throw new NotValidCityHotelError();
-		}
-		return result;
+			HotelHotelList result = new HotelHotelList();
+			HotelBookingWSStub HBstub;
+
+			try {
+				HBstub = new HotelBookingWSStub();
+				City city = new City();
+				city.setCity(cityHotel.getCityHotel());
+				String[] listaHoteles = HBstub.getHotelList(city).getHotel();
+				result.setHotel(listaHoteles);
+			} catch (AxisFault e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (RemoteException e) {
+				throw new RemoteServiceError();
+			} catch (NotValidCityError e) {
+				throw new NotValidCityHotelError();
+			}
+			return result;
 		}
 		else{
 			throw new NotValidSessionError();
@@ -498,7 +567,7 @@ public class TravelAgencyWSSkeleton{
 		CheckingOnlyHotelResponse result = new CheckingOnlyHotelResponse();
 		String ciudad = checkingOnlyHotel.getCity();
 		String hotel = checkingOnlyHotel.getHotel();
-		
+
 		HotelBookingWSStub HBstub;
 		try {
 			HBstub = new HotelBookingWSStub();
@@ -545,8 +614,61 @@ public class TravelAgencyWSSkeleton{
 			es.upm.fi.sos.t3.travelagency.BookingOnlyHotel bookingOnlyHotel
 			)
 					throws NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#bookOnlyHotel");
+				//este metodo debe realizar la reserva de una/varias habitaciones de un hotel dado el
+				//el numero de habitaciones, la ciudad y el hotel. Devolverá un boolean indicando el éxito de la
+				//reserva y el precio de la reserva.
+
+
+				if(this.log==true){
+					/* Creamos un objeto de tipo BookingOnlyFlightResponse para la respuesta */
+					BookingOnlyHotelResponse result = new BookingOnlyHotelResponse();
+					
+					/* Sacamos los datos de la solicitud */
+					String ciudad = bookingOnlyHotel.getCity();
+					String hotel = bookingOnlyHotel.getHotel();
+					int n_habitaciones = bookingOnlyHotel.getRoom();
+
+					try {
+						/* Creamos un stub del servicio HotelService para realizar la peticion de reserva */
+						HotelBookingWSStub HBstub = new HotelBookingWSStub();
+						
+						/* Creamos un objeto del tipo BookingHotel para la peticion al servicio */
+						BookingHotel bookingHotel = new BookingHotel();
+
+						bookingHotel.setCity(ciudad);
+						bookingHotel.setHotel(hotel);
+						bookingHotel.setRoom(n_habitaciones);
+						
+						/* Creamos un objeto del tipo BookingHotelResponse para la respuesta del servicio */
+						BookingHotelResponse bookingHotelResponse = new BookingHotelResponse();
+
+						/* Llamamos al servicio */
+						bookingHotelResponse = HBstub.bookHotel(bookingHotel);
+							
+						/* Establecemos en el objeto a devolver el resultado */
+						result.setBookingResult(bookingHotelResponse.getBookingResult());
+						result.setPrice(bookingHotelResponse.getPrice());
+						
+					} catch (AxisFault e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (RemoteException e) {
+						throw new RemoteServiceError();
+					} catch (NotValidCityError e) {
+						throw new NotValidCityHotelError();
+					} catch (NotValidHotelError e) {
+						throw new NotValidHotelHotelError();
+					} catch (NotEnoughRoomsError e) {
+						throw new NotEnoughRoomsHotelError();
+					} catch (NotValidRoomError e) {
+						throw new NotValidRoomHotelError();
+					}
+					
+					return result;
+				}
+				else{
+					throw new NotValidSessionError();
+				}
 	}
 
 	/**
